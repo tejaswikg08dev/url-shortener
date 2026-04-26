@@ -1,0 +1,9 @@
+# Local profile — overrides for local development with LocalStack
+spring.cloud.aws:
+  dynamodb:
+    endpoint: http://localhost:4566
+  sqs:
+    endpoint: http://localhost:4566
+
+app:
+  base-url: http://localhost:8080

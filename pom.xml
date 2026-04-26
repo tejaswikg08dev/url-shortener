@@ -22,7 +22,7 @@
     <!-- Maven builds them in dependency order: common first, then api and analytics -->
     <modules>
         <module>url-shortener-common</module>
-    <!-- <module>url-shortener-api</module>-->
+        <module>url-shortener-api</module>
      <!--<module>url-shortener-analytics</module>-->
  </modules>
  <!-- Version numbers — change here, changes everywhere -->
