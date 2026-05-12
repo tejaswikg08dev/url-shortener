@@ -32,7 +32,7 @@ public class UrlValidator {
 
         String scheme = uri.getScheme();
 
-        if(scheme == null || !ALLOWED_PROTOCOLS.contains(scheme.toUpperCase())){
+        if(scheme == null || !ALLOWED_PROTOCOLS.contains(scheme.toLowerCase())){
             throw new InvalidUrlException("Only http and https protocols are allowed");
         }
 
@@ -41,8 +41,5 @@ public class UrlValidator {
             throw new InvalidUrlException("URL must have a valid host");
         }
 
-        if(blockedDomains != null && !blockedDomains.contains(host.toUpperCase())){
-            throw new InvalidUrlException("Domain is blocked: " + host);
-        }
     }
 }

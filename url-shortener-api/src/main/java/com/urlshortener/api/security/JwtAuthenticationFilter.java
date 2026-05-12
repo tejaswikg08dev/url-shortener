@@ -38,9 +38,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 User user = userRepository.findById(userId).orElse(null);
 
-                if(user == null){
+                if (user != null) {
+                    log.info("JWT Filter - User found: {}", user.getEmail());
                     UserPrincipal principal = new UserPrincipal(user);
-
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
