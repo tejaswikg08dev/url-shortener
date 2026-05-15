@@ -1,9 +1,10 @@
 package com.urlshortener.api.service;
 
-import com.sun.jdi.LongValue;
 import com.urlshortener.common.util.Base62Encoder;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -31,13 +32,20 @@ public class KeyGeneratorService {
         this.batchSize = batchSize;
     }
 
+    @PostConstruct
+    public void init() {
+        ensureSequenceExists();
+        doRefill();
+        log.info("KeyGeneratorService initialized. Buffer size: {}", this.keyBuffer.size());
+    }
+
     public String nextKey(){
         Long id = keyBuffer.poll();
         if(id == null){
-            refillBuffer();
+            doRefill();
             id = keyBuffer.poll();
             if(id == null){
-                throw new RuntimeException("Failed to generate key - buffer empty after refill");
+                throw new IllegalStateException("Failed to generate key - buffer empty after refill");
             }
         }
 
@@ -48,11 +56,18 @@ public class KeyGeneratorService {
         return Base62Encoder.encode(id);
     }
 
-    private void refillBuffer(){
-        if(refillLock.tryLock())return;
-        try{
-            if(keyBuffer.size() >= batchSize / 2) return;
+    private void refillBuffer() {
+        if (refillLock.tryLock()) return;
+        try {
+            doRefill();
+        } finally {
+            refillLock.unlock();
+        }
+    }
 
+    private void doRefill() {
+            if(keyBuffer.size() >= batchSize / 2) return;
+        try {
             String sql = "SELECT nextval('short_key_seq') FROM generate_series(1, ?)";
 
             List<Long> ids = jdbcTemplate.queryForList(sql, Long.class, batchSize);
@@ -60,8 +75,21 @@ public class KeyGeneratorService {
             keyBuffer.addAll(ids);
 
             log.info("Refilled key buffer with {} keys. Buffer size: {}", ids.size(), keyBuffer.size());
-        } finally{
-            refillLock.unlock();
+        } catch(DataAccessException e){
+            log.error("Failed to refill key buffer: {}", e.getMessage());
+        }
+    }
+
+    private void ensureSequenceExists() {
+        try{
+            Boolean exists = jdbcTemplate.queryForObject(
+                    "SELECT EXISTS(SELECT 1 FROM pg_sequences WHERE sequencename = 'short_key_seq')", Boolean.class);
+            if (Boolean.FALSE.equals(exists)) {
+                log.warn("Sequence short_key_seq does not exist. Creating it.");
+                jdbcTemplate.execute("CREATE SEQUENCE short_key_seq START 100000000 INCREMENT BY 1");
+            }
+        } catch (DataAccessException e){
+            log.error("Failed to verify/create sequence 'short_key_seq': {}", e.getMessage());
         }
     }
 

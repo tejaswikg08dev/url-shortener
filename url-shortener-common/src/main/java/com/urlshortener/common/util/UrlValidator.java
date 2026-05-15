@@ -4,7 +4,6 @@ import com.urlshortener.common.exception.InvalidUrlException;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashSet;
 import java.util.Set;
 
 public class UrlValidator {

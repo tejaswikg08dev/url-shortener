@@ -7,6 +7,9 @@ spring:
     name: url-shortener-api
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
+  web:
+    resources:
+      add-mappings: false
     # Use environment variable if set, otherwise default to 'local'
 
   # PostgreSQL connection
