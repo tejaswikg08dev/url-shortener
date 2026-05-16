@@ -1,0 +1,4 @@
+# Local profile - use LocalStack for SQS
+spring.cloud.aws:
+  sqs:
+    endpoint: http://localhost:4566

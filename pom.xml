@@ -23,7 +23,7 @@
     <modules>
         <module>url-shortener-common</module>
         <module>url-shortener-api</module>
-     <!--<module>url-shortener-analytics</module>-->
+        <module>url-shortener-analytics</module>
  </modules>
  <!-- Version numbers — change here, changes everywhere -->
     <properties>

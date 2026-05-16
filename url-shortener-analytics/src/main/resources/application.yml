@@ -1,0 +1,57 @@
+server:
+  port: 8081
+  # Different port from API service (8080)
+  # Both services run simultaneously
+
+spring:
+  application:
+    name: url-shortener-analytics
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+  # Same PostgreSQL database as API service
+  # Both services read/write to the same tables
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:urlshortener}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      # Smaller pool than API service - analytics has less DB traffic
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+      # validate only - Flyway in API service manages the schema
+    show-sql: false
+
+  # Jackson JSON config
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      # Serialize Instant as "2026-04-25T10:30:00Z" not as a number
+
+# AWS SQS config
+spring.cloud.aws:
+  region:
+    static: ${AWS_REGION:us-east-1}
+  credentials:
+    access-key: ${AWS_ACCESS_KEY_ID:test}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:test}
+  sqs:
+    endpoint: ${SQS_ENDPOINT:}
+
+app:
+  sqs:
+    click-events-queue: ${SQS_QUEUE_NAME:click-events-queue}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    com.urlshortener: DEBUG
