@@ -1,0 +1,3 @@
+@tailwind base;        /* Normalize/reset styles (consistent across browsers) */
+@tailwind components;  /* Component classes (if you define any with @apply) */
+@tailwind utilities;   /* All utility classes like p-4, text-lg, flex, etc. */
