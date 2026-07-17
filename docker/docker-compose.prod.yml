@@ -1,0 +1,81 @@
+version: '3.8'
+
+# Production: runs on EC2 instance
+# External services: RDS PostgreSQL, DynamoDB, SQS (managed by AWS)
+# Local services: API, Analytics, Redis (in Docker on EC2)
+#
+# Usage: docker compose -f docker-compose.prod.yml up -d
+
+services:
+  api-service:
+    image: ${ECR_REGISTRY}/url-shortener-api:latest
+    # In production we pull pre-built images from ECR
+    # (built and pushed by CI/CD pipeline)
+    container_name: urlshortener-api
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: ${RDS_ENDPOINT}
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      APP_BASE_URL: ${APP_BASE_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
+      SQS_QUEUE_NAME: ${SQS_QUEUE_NAME}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  analytics-service:
+    image: ${ECR_REGISTRY}/url-shortener-analytics:latest
+    container_name: urlshortener-analytics
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: ${RDS_ENDPOINT}
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      SQS_QUEUE_NAME: ${SQS_QUEUE_NAME}
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  redis:
+    image: redis:7-alpine
+    container_name: urlshortener-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    # --maxmemory 128mb: limit Redis to 128MB
+    # --maxmemory-policy allkeys-lru: when full evict least recently used keys
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
