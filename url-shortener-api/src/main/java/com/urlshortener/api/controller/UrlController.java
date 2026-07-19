@@ -84,7 +84,7 @@ public class UrlController {
         byte[] qrImage = qrcodeService.generateQrcode(shortUrl, size);
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_PNG)
-                .body(qrImage);
+                .body(qrImage);//CICD Test
     }
 
 }
